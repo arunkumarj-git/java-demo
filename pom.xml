@@ -14,7 +14,7 @@
     </parent>
 
     <groupId>com.example</groupId>
-    <artifactId>java-devops-app</artifactId>
+    <artifactId>java-demo</artifactId>
     <version>1.0.0</version>
 
     <properties>
