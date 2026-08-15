@@ -1,9 +1,11 @@
 pipeline {
+
     agent any
 
     environment {
         AWS_REGION = 'ap-south-1'
-        ECR_REGISTRY = '869843199190.dkr.ecr.ap-south-1.amazonaws.com'
+        AWS_ACCOUNT_ID = '869843199190'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         ECR_REPO = "${ECR_REGISTRY}/java-demo"
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
@@ -16,22 +18,23 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Build') {
             steps {
-                sh 'mvn clean test'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Package') {
+        stage('Test') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn test'
             }
         }
 
         stage('Docker Build') {
             steps {
                 sh '''
-                    docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+                    docker build \
+                    -t ${ECR_REPO}:${IMAGE_TAG} .
                 '''
             }
         }
@@ -48,13 +51,25 @@ pipeline {
             }
         }
 
-        stage('Push ECR') {
+        stage('Push Image') {
             steps {
                 sh '''
                     docker push ${ECR_REPO}:${IMAGE_TAG}
                 '''
             }
         }
+    }
+
+    post {
+        success {
+            echo 'Build and Docker image push completed successfully.'
+        }
+
+        failure {
+            echo 'Pipeline failed. Check the Console Output.'
+        }
+    }
+}
     }
 }
 }
