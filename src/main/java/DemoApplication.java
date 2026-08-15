@@ -13,11 +13,6 @@ public class DemoApplication {
         SpringApplication.run(DemoApplication.class, args);
     }
 
-    @GetMapping("/")
-    public String home() {
-        return "Hello from Java DevOps Application!";
-    }
-
     @GetMapping("/health")
     public String health() {
         return "Application is UP";
