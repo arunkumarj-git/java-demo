@@ -1,14 +1,11 @@
 pipeline {
-
     agent any
 
     environment {
         AWS_REGION = 'ap-south-1'
         AWS_ACCOUNT_ID = '869843199190'
-
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         ECR_REPO = "${ECR_REGISTRY}/java-demo"
-
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -20,13 +17,13 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Maven Test') {
             steps {
                 sh 'mvn clean test'
             }
         }
 
-        stage('Package') {
+        stage('Maven Package') {
             steps {
                 sh 'mvn package -DskipTests'
             }
@@ -35,7 +32,7 @@ pipeline {
         stage('Check JAR') {
             steps {
                 sh '''
-                    echo "Generated JAR files:"
+                    echo "Checking generated JAR..."
                     find target -name "*.jar" -type f
                 '''
             }
@@ -45,9 +42,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Building Docker image..."
-
-                    docker build \
-                    -t ${ECR_REPO}:${IMAGE_TAG} .
+                    docker build -t ${ECR_REPO}:${IMAGE_TAG} .
                 '''
             }
         }
@@ -57,11 +52,8 @@ pipeline {
                 sh '''
                     echo "Logging in to Amazon ECR..."
 
-                    aws ecr get-login-password \
-                    --region ${AWS_REGION} | \
-                    docker login \
-                    --username AWS \
-                    --password-stdin ${ECR_REGISTRY}
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
                 '''
             }
         }
@@ -69,19 +61,16 @@ pipeline {
         stage('Push Image') {
             steps {
                 sh '''
-                    echo "Pushing Docker image..."
-
+                    echo "Pushing Docker image to ECR..."
                     docker push ${ECR_REPO}:${IMAGE_TAG}
                 '''
             }
         }
 
-        stage('Show Image') {
+        stage('Verify Image') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo "Docker image pushed successfully"
-                    echo "======================================"
+                    echo "Docker image pushed successfully:"
                     echo "${ECR_REPO}:${IMAGE_TAG}"
                 '''
             }
@@ -89,18 +78,12 @@ pipeline {
     }
 
     post {
-
         success {
-            echo '======================================'
-            echo ' Jenkins Pipeline SUCCESS'
-            echo '======================================'
+            echo 'Jenkins Pipeline SUCCESS'
         }
 
         failure {
-            echo '======================================'
-            echo ' Jenkins Pipeline FAILED'
-            echo '======================================'
-            echo 'Check Console Output for details.'
+            echo 'Jenkins Pipeline FAILED'
         }
 
         always {
@@ -108,4 +91,3 @@ pipeline {
         }
     }
 }
-```
